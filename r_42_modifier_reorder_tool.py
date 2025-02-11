@@ -31,12 +31,14 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
             QMessageBox.warning(self, "No Selection", "Please select at least one object")
             return
         
-        unique_modifiers = set()
+        unique_modifiers = []
 
         self.object_dict = {}
         for obj in self.selected_objects:
             modifiers = [mod.name for mod in obj.modifiers]
-            unique_modifiers.update(modifiers)
+            for mod_name in modifiers:
+                if mod_name not in unique_modifiers:
+                    unique_modifiers.append(mod_name)
             # Create a dictionary entry for the current object
             obj_data = {
                 "object_name": obj.name,
