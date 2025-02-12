@@ -5,7 +5,7 @@ import sys
 from site import addsitedir
 import os
 
-addsitedir(r"C:\Users\brook\Desktop\r42_modifier_reorder")
+addsitedir(r"Z:\_TEMP\Brook\3dsMax_Reorder_tool\r42_modifier_reorder")
 
 from importlib import reload
 import r42_modifier_reorder_ui
@@ -31,12 +31,15 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
             QMessageBox.warning(self, "No Selection", "Please select at least one object")
             return
         
-        unique_modifiers = set()
+        unique_modifiers = []
 
         self.object_dict = {}
         for obj in self.selected_objects:
             modifiers = [mod.name for mod in obj.modifiers]
-            unique_modifiers.update(modifiers)
+            for mod_name in modifiers:
+                if mod_name not in unique_modifiers:
+                    unique_modifiers.append(mod_name)
+                    self.modifier_list.addItem(mod_name)
             # Create a dictionary entry for the current object
             obj_data = {
                 "object_name": obj.name,
@@ -51,26 +54,47 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
                 obj_data["mods"][mod.name].append(mod)      # adds duplicated
 
             self.object_dict[obj.name] = obj_data
-
-        for mod_name in sorted(unique_modifiers):
-            self.modifier_list.addItem(mod_name)
         
         # Debugging: Print the created dictionary to the console
         print("object_dict:")
         print(self.object_dict)
 
+    def is_modifier_instanced(self, modifier):
+        return rt.refhierarchy.IsRefTargetInstanced(modifier)
+
     def apply_load_order(self):
+        total_mods = self.total_progress()
+        if total_mods == 0:
+            print("No modifiers to process.")
+            return
+        
+        # Show the progress dialog
+        dialog, progress_bar = self.show_progress_dialog(
+            total_mods = total_mods,
+            title="Applying Load Order", 
+            message="Reordering modifiers..."
+        )
+        self.processed_mods = 0
+
+
         load_order = [self.modifier_list.item(i).text() for i in range(self.modifier_list.count())]
-        load_order.reverse()
+        #load_order.reverse()
         print(f"Desired Load Order: {load_order}")
         for obj_name, obj_data in self.object_dict.items():
             print(f"Processing Object {obj_name}")
             print(f"Modifiers for {obj_name}: {list(obj_data['mods'].keys())}")
             self.process_object(obj_name, load_order)
-            rt.redrawViews()
-        QMessageBox.information(self, "Success", "Modifiers reordered successfully")
+        rt.redrawViews()
 
-        
+
+
+
+
+        QMessageBox.information(self, "Success", "Modifiers reordered successfully")
+        self.populate_modifiers()
+
+    def reset_ui(self):
+        self.modifier_list.clear()
         
     def process_object(self, object_name, load_order):
         obj_dict_entry = self.object_dict.get(object_name)
@@ -81,17 +105,36 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
                 modifiers = mods[target]
                 print(modifiers)
                 for mod in modifiers:
-                    if mod.name in FFD_Filter:
-                        self.handle_FFD(obj=obj, mod=mod)
+                    if self.is_modifier_instanced(mod):
+                        print(f"Modifier '{mod.name}' is instanced.")
+                        if mod.name in FFD_Filter:
+                            self.handle_FFD(obj=obj, mod=mod)
+                        else:
+                            self.clone_mod(obj=obj, mod=mod)
                     else:
-                        self.clone_mod(obj=obj, mod=mod)
+                        print(f"Modifier '{mod.name}' is not instanced.")
+                        if mod.name in FFD_Filter:
+                            self.handle_FFD(obj=obj, mod=mod)
+                        else:
+                            self.clone_mod_basic(obj=obj, mod=mod)
 
     def clone_mod(self, obj, mod) -> rt.modifier:
-        cloned_mod = rt.copy(mod)
+        rt.addModifierWithLocalData(obj, mod, obj, mod, before=len(obj.modifiers))
         rt.deleteModifier(obj, mod)
-        rt.addModifier(obj, cloned_mod)
-        print(f"Successfully handled! {cloned_mod}")
-        return cloned_mod
+        print(f"Successfully handled! {mod}")
+        self.processed_mods += 1
+        self.update_progress_bar(self.processed_mods)
+        QApplication.processEvents()
+        return obj.modifiers[-1]
+
+    def clone_mod_basic(self, obj, mod):
+        clone = rt.copy(mod)
+        rt.addModifier(obj, clone, before=len(obj.modifiers))
+        rt.deleteModifier(obj, mod)
+        self.processed_mods += 1
+        self.update_progress_bar(self.processed_mods)
+        QApplication.processEvents()
+        print(f"Successfully handled! {mod}")
 
     def handle_FFD(self, obj, mod):
         mod_context = {
