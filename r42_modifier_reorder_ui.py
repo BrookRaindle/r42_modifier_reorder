@@ -37,6 +37,9 @@ class ModifierReorderUI(QMainWindow):
         self.apply_button = QPushButton("Apply Load Order")
         self.layout.addWidget(self.apply_button)
 
+        self.undo_button = QPushButton("Undo Changes (Reverts to file state before hitting Apply)")
+        self.layout.addWidget(self.undo_button)
+
 
     def show_progress_dialog(self, total_mods, title="Processing...", message="Please wait..."):
 
