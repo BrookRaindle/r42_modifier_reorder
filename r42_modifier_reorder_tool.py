@@ -21,6 +21,7 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
 
         self.selected_objects = []
         rt.holdMaxFile()
+        self.undo_button.clicked.connect(undo_changes)
 
     def populate_modifiers(self):
         # Clear the modifier list UI
@@ -33,7 +34,7 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
 
         self.object_dict = {}
         for obj in self.selected_objects:
-            if self.is_object_instanced(obj):
+            if object_instanced(obj):
                 print(f"Object '{obj.name}' is instanced.")
             else: 
                 print(f"Object '{obj.name}' is NOT instanced.")
@@ -106,7 +107,7 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
                 print(modifiers)
                 for mod in modifiers:
                     print("STEP 2")
-                    if self.is_modifier_instanced(mod):
+                    if modifier_instanced(mod):
                         print(f"Modifier '{mod.name}' is instanced.")
                         if mod.name in FFD_Filter:
                             print("STEP 3")
@@ -159,6 +160,17 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
     def undo_button_method(self):   
         rt.fetchMaxFile()
     
+
+def modifier_instanced(modifier):
+    return rt.refhierarchy.IsRefTargetInstanced(modifier)
+
+
+def object_instanced(obj):
+    return rt.refhierarchy.IsRefTargetInstanced(obj)
+
+
+def undo_changes():
+    rt.fetchMaxFile()
 if __name__ == "__main__":
     app = QApplication.instance()
     window = MainWindow()
