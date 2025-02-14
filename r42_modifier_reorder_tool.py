@@ -23,7 +23,6 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
         self.undo_button.clicked.connect(undo_changes)
 
     def populate_modifiers(self):
-        # Clear the modifier list UI
         self.modifier_list.clear()
         self.selected_objects = list(rt.selection)
         if not self.selected_objects:
@@ -31,14 +30,12 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
                 self, "No Selection", "Please select at least one object"
             )
             return
-        unique_modifiers = []
 
+        unique_modifiers = []
         self.object_dict = {}
+
         for obj in self.selected_objects:
-            if object_instanced(obj):
-                print(f"Object '{obj.name}' is instanced.")
-            else:
-                print(f"Object '{obj.name}' is NOT instanced.")
+            if not object_instanced(obj):
                 modifiers = [mod.name for mod in obj.modifiers]
                 for mod_name in modifiers:
                     if mod_name not in unique_modifiers:
@@ -61,10 +58,6 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
 
                 self.object_dict[obj.name] = obj_data
 
-        # Debugging: Print the created dictionary to the console
-        print("object_dict:")
-        print(self.object_dict)
-
     def apply_load_order(self):
         total_mods = self.total_progress()
         if total_mods == 0:
@@ -85,14 +78,9 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
             self.modifier_list.item(i).text()
             for i in range(self.modifier_list.count())
         ]
-        print(f"Desired Load Order: {load_order}")
-        # load_order.reverse()
         for obj_name, obj_data in self.object_dict.items():
-
-            print(f"Processing Object {obj_name}")
-            print(f"Modifiers for {obj_name}: {list(obj_data['mods'].keys())}")
-            print("STEP 1")
             self.process_object(obj_name, load_order)
+
         rt.redrawViews()
 
         QMessageBox.information(
@@ -107,46 +95,30 @@ class MainWindow(r42_modifier_reorder_ui.ModifierReorderUI):
         for target in load_order:
             if target in mods:
                 modifiers = mods[target]
-                print(modifiers)
                 for mod in modifiers:
-                    print("STEP 2")
-                    if modifier_instanced(mod):
-                        print(f"Modifier '{mod.name}' is instanced.")
-                        if mod.name in FFD_Filter:
-                            print("STEP 3")
-                            self.handle_FFD(obj=obj, mod=mod)
-                        else:
-                            print("STEP 3")
-                            self.clone_mod(obj=obj, mod=mod)
+                    if mod.name in FFD_Filter:
+                        self.handle_FFD(obj, mod)
+                    elif modifier_instanced(mod):
+                        self.clone_mod(obj, mod)
                     else:
-                        print(f"Modifier '{mod.name}' is not instanced.")
-                        if mod.name in FFD_Filter:
-                            print("STEP 3")
-                            self.handle_FFD(obj=obj, mod=mod)
-                        else:
-                            print("STEP 3")
-                            self.clone_mod_basic(obj=obj, mod=mod)
+                        self.clone_mod_basic(obj, mod)
 
     def clone_mod(self, obj, mod) -> rt.modifier:
-        ind = len(obj.modifiers)
-        print(f"ind = {ind}")
-        rt.addModifierWithLocalData(obj, mod, obj, mod, before=ind)
-        print(f"Successfully added {mod} to {obj}")
+        rt.addModifierWithLocalData(
+            obj, mod, obj, mod, before=len(obj.modifiers)
+        )
         rt.deleteModifier(obj, mod)
-        print(f"Successfully deleted {mod} from {obj}")
+
         self.processed_mods += 1
         self.update_progress_bar(self.processed_mods)
         QApplication.processEvents()
-
         return obj.modifiers[-1]
 
     def clone_mod_basic(self, obj, mod):
         clone = rt.copy(mod)
-        ind = len(obj.modifiers)
-        rt.addModifier(obj, clone, before=ind)
-        print(f"Successfully added {mod} to {obj}")
+        rt.addModifier(obj, clone)
         rt.deleteModifier(obj, mod)
-        print(f"Successfully deleted {mod} from {obj}")
+
         self.processed_mods += 1
         self.update_progress_bar(self.processed_mods)
         QApplication.processEvents()
