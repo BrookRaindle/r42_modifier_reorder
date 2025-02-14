@@ -3,7 +3,7 @@ from pymxs import runtime as rt
 import sys
 from site import addsitedir
 
-addsitedir(r"C:\Users\Jack.P\Desktop\r42\3dsmax\2022\r42_modifier_reorder")
+addsitedir(r"Z:\_TEMP\Brook\3dsMax_Reorder_tool\r42_modifier_reorder")
 
 from importlib import reload
 import r42_modifier_reorder_ui
