@@ -1,10 +1,7 @@
-from enum import unique
-from json import load
 from PySide2.QtWidgets import QApplication, QMessageBox
 from pymxs import runtime as rt
 import sys
 from site import addsitedir
-import os
 
 addsitedir(r"Z:\_TEMP\Brook\3dsMax_Reorder_tool\r42_modifier_reorder")
 
