@@ -29,6 +29,14 @@ class ModifierReorderUI(QMainWindow):
         self.modifier_list.setDragDropMode(QListWidget.InternalMove)  # Enable drag-and-drop
         self.layout.addWidget(self.modifier_list)
 
+        self.disclaimer_label = QLabel(
+            '<span style="font-size: 12px; font-weight: bold; color: yellow;">'
+            'The Modifier order in the UI only matters when applying; initial population order may be inaccurate due to a mix of selected geometry'
+            '</span>'
+        )
+        self.disclaimer_label.setAlignment(Qt.AlignCenter)  # Center-align the text
+        self.layout.addWidget(self.disclaimer_label)
+
         # Button to populate the list
         self.populate_button = QPushButton("Populate Modifiers From Selected Objects")
         self.layout.addWidget(self.populate_button)
